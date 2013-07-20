@@ -175,7 +175,7 @@ func handleVerification(w http.ResponseWriter, r *http.Request) {
 
 func handleNewItem(w http.ResponseWriter, r *http.Request) {
 	rawLinks := r.Header[http.CanonicalHeaderKey("Link")]
-	if rawLinks == nil || len(rawLinks) == 1 {
+	if rawLinks == nil {
 		log.Println("Missing Link: headers in update")
 		return
 	}
@@ -186,7 +186,7 @@ func handleNewItem(w http.ResponseWriter, r *http.Request) {
 		for _, parsedLink := range link.Parse(rawLink) {
 			if parsedLink.Uri != "" && parsedLink.Rel != "" {
 				switch parsedLink.Rel {
-				case "rel":
+				case "self":
 					topic = parsedLink.Uri
 				case "hub":
 					hub = parsedLink.Uri
