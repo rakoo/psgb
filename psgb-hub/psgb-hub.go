@@ -7,7 +7,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
-  "net/url"
+	"net/url"
 	"strconv"
 	"time"
 )
@@ -157,15 +157,15 @@ func (sh *subscribeHandler) confirmSubscription(sr *subscribeRequest) {
 	challenge := sh.challengeSource.RandomString()
 
 	var requestURI bytes.Buffer
-  fmt.Fprint(&requestURI, sr.callback)
-  fmt.Fprint(&requestURI, "?")
+	fmt.Fprint(&requestURI, sr.callback)
+	fmt.Fprint(&requestURI, "?")
 	fmt.Fprintf(&requestURI, "hub.mode=%s&", url.QueryEscape(sr.mode))
 	fmt.Fprintf(&requestURI, "hub.topic=%s&", url.QueryEscape(sr.topic))
 	fmt.Fprintf(&requestURI, "hub.challenge=%s&", url.QueryEscape(challenge))
 	fmt.Fprintf(&requestURI, "hub.lease_seconds=%d&", sr.leaseSeconds)
 
-  log.Println("Confirming subscription for", requestURI.String())
-  resp, err := http.Get(requestURI.String())
+	log.Println("Confirming subscription for", requestURI.String())
+	resp, err := http.Get(requestURI.String())
 	sh.freeConns <- true
 
 	// TODO: put back the request in the stack to re-process it later
@@ -184,18 +184,18 @@ func (sh *subscribeHandler) confirmSubscription(sr *subscribeRequest) {
 		return
 	}
 
-  var bodyBuf bytes.Buffer
-  io.Copy(&bodyBuf, resp.Body)
-  subscriberChallenge := bodyBuf.String()
+	var bodyBuf bytes.Buffer
+	io.Copy(&bodyBuf, resp.Body)
+	subscriberChallenge := bodyBuf.String()
 
-  if subscriberChallenge != challenge {
-    log.Printf("Bad challenge from subscriber: expected %s, got %s", challenge, subscriberChallenge)
-    return
-  }
+	if subscriberChallenge != challenge {
+		log.Printf("Bad challenge from subscriber: expected %s, got %s", challenge, subscriberChallenge)
+		return
+	}
 
-  if _, ok := sh.subscribers[sr.topic]; !ok {
-    sh.subscribers[sr.topic] = make(map[string]*subscriber)
-  }
+	if _, ok := sh.subscribers[sr.topic]; !ok {
+		sh.subscribers[sr.topic] = make(map[string]*subscriber)
+	}
 
 	sh.subscribers[sr.topic][sr.callback] = &subscriber{
 		callback:     sr.callback,
