@@ -9,6 +9,7 @@ import (
 	"net/http"
   "net/url"
 	"strconv"
+	"time"
 )
 
 const (
@@ -35,7 +36,7 @@ type randStringMaker struct {
 
 func newRandStringMaker() *randStringMaker {
 	return &randStringMaker{
-		randProv: rand.New(rand.NewSource(99)),
+		randProv: rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
 }
 
