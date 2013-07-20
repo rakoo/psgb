@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
+
+  "github.com/rakoo/psgb/pkg/link"
 )
 
 var (
@@ -82,12 +84,9 @@ func SubscribeToFunc(w http.ResponseWriter, r *http.Request) {
 }
 
 func SubscribeCallbackFunc(w http.ResponseWriter, r *http.Request) {
-
-	// TODO post handling
-	/*
-	  if r.Method == "POST" {
-	  }
-	*/
+  if r.Method == "POST" {
+    handleNewItem(w, r)
+  }
 
 	if r.Method == "GET" {
 		handleVerification(w, r)
@@ -148,6 +147,36 @@ func handleVerification(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, challenge)
 	return
 }
+
+func handleNewItem(w http.ResponseWriter, r *http.Request) {
+  rawLinks := r.Header[http.CanonicalHeaderKey("Link")]
+  if rawLinks == nil || len(rawLinks) == 1 {
+    log.Println("Missing Link: headers in update")
+    return
+  }
+
+  topic := ""
+  hub := ""
+  for _, rawLink := range rawLinks {
+    for _, parsedLink := range link.Parse(rawLink) {
+      if parsedLink.Uri != "" && parsedLink.Rel != "" {
+        switch (parsedLink.Rel) {
+        case "rel":
+          topic = parsedLink.Uri
+        case "hub":
+          hub = parsedLink.Uri
+        }
+      }
+    }
+  }
+
+  log.Printf("New content for %s from %s", topic, hub)
+
+  w.WriteHeader(http.StatusAccepted)
+
+  return
+}
+
 
 func main() {
 	http.HandleFunc("/subscribeTo", SubscribeToFunc)
