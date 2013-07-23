@@ -158,29 +158,24 @@ func (sh *subscribeHandler) confirmSubscription(sr *subscribeRequest) {
 		sh.subscribers[sr.topic] = make(map[Callback]*subscriber)
 	}
 
-	sh.subscribers[sr.topic][sr.callback] = &subscriber{
+	sub := &subscriber{
 		callback:     Callback(sr.callback),
 		topic:        Topic(sr.topic),
 		lastNotified: time.Now(),
 		leaseSeconds: sr.leaseSeconds,
 	}
+	sh.subscribers[sr.topic][sr.callback] = sub
 
 }
 
-func (sh *subscribeHandler) distributeContent(topic Topic) {
+
+func (sh *subscribeHandler) distributeToSubscribers(topic Topic) {
 	for _, sub := range sh.subscribers[topic] {
 		data := CONTENT_STORE.contentAfterDate(topic, sub.lastNotified)
-
-		req, err := http.NewRequest("POST", string(sub.callback), bytes.NewReader(data))
+		req, err := buildRequest(data, string(sub.callback), string(topic))
 		if err != nil {
-			log.Println("Couldn't create a POST request:", err.Error())
 			continue
 		}
-
-		var linkBuff bytes.Buffer
-		fmt.Fprintf(&linkBuff, "<%s>; rel=self,", string(topic))
-		fmt.Fprintf(&linkBuff, "<%s>; rel=hub,", HUB_URL)
-		req.Header.Add("Link", linkBuff.String())
 
 		c := http.Client{}
 		<-FREE_CONNS
@@ -188,8 +183,7 @@ func (sh *subscribeHandler) distributeContent(topic Topic) {
 
 	}
 
-	// TODO: remove published elements from memory when published, because
-	// they will never be used anywhere else
+	// TODO: remove old elements (only keep last 10)
 }
 
 func doDistribute(c http.Client, req *http.Request, attempt int) {
@@ -214,4 +208,19 @@ func doDistribute(c http.Client, req *http.Request, attempt int) {
 		<-FREE_CONNS
 		go doDistribute(c, req, attempt+1)
 	}
+}
+
+func buildRequest(data []byte, remoteUrl, feedUrl string) (req *http.Request, err error) {
+	req, err = http.NewRequest("POST", remoteUrl, bytes.NewReader(data))
+	if err != nil {
+		log.Println("Couldn't create a POST request:", err.Error())
+		return
+	}
+
+	var linkBuff bytes.Buffer
+	fmt.Fprintf(&linkBuff, "<%s>; rel=self,", feedUrl)
+	fmt.Fprintf(&linkBuff, "<%s>; rel=hub,", HUB_URL)
+	req.Header.Add("Link", linkBuff.String())
+
+	return
 }

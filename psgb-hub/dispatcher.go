@@ -10,7 +10,7 @@ func startDispatcher(sh *subscribeHandler, ph *publishHandler) {
 
 	go func() {
 		for topic := range d.ph.newContent {
-			d.sh.distributeContent(topic)
+			d.sh.distributeToSubscribers(topic)
 		}
 	}()
 }
