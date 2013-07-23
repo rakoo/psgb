@@ -53,7 +53,7 @@ func (cs *contentStore) processAtom(rawContent []byte, topic Topic) {
 
 	sortedDates := cs.contentSortedItems[topic]
 	if sortedDates == nil {
-		cs.contentSortedItems[topic] = make([]time.Time, len(atomFeed.Entries))
+		cs.contentSortedItems[topic] = make([]time.Time, 0, len(atomFeed.Entries))
 		sortedDates = cs.contentSortedItems[topic]
 	}
 
@@ -70,9 +70,11 @@ func (cs *contentStore) processAtom(rawContent []byte, topic Topic) {
 			continue
 		}
 
-		insertDate(sortedDates, date)
+		sortedDates = insertDate(sortedDates, date)
 		items[date] = string(content)
 	}
+
+	cs.contentSortedItems[topic] = sortedDates
 
 	// since no one is supposed to use it afterwards ...
 	atomFeed.Entries = []*feeds.AtomEntry{}
@@ -102,9 +104,10 @@ func (cs *contentStore) contentAfterDate(topic Topic, t time.Time) (rawContent [
 	return b.Bytes()
 }
 
-func insertDate(old []time.Time, d time.Time) {
-	old = append(old, d)
-	sort.Sort(&dateSorter{old})
+func insertDate(old []time.Time, d time.Time) (newDates []time.Time) {
+	newDates = append(old, d)
+	sort.Sort(&dateSorter{newDates})
+	return
 }
 
 // A struct to sort dates by their lexicographical value. We only
