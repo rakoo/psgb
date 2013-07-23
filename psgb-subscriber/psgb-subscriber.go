@@ -174,6 +174,8 @@ func handleVerification(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleNewItem(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
 	rawLinks := r.Header[http.CanonicalHeaderKey("Link")]
 	if rawLinks == nil {
 		log.Println("Missing Link: headers in update")
