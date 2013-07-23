@@ -27,10 +27,12 @@ func newContentStore() (cs *contentStore) {
 
 func (cs *contentStore) processNewContent(rawContent []byte, ct string, topic Topic) {
 	switch ct {
-	case "applicatio/atom+xml":
+	case "application/atom+xml":
 		cs.processAtom(rawContent, topic)
-	case "applicatio/rss+xml":
+	case "application/rss+xml":
 		cs.processRss(rawContent, topic)
+	default:
+		log.Println("Couldn't parse", ct)
 	}
 
 }
