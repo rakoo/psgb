@@ -3,7 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/xml"
-	"github.com/rakoo/feeds"
+	"github.com/pjvds/feeds"
 	"log"
 	"sort"
 	"time"
