@@ -165,28 +165,6 @@ func (sh *subscribeHandler) confirmSubscription(sr *subscribeRequest) {
 		leaseSeconds: sr.leaseSeconds,
 	}
 	sh.subscribers[sr.topic][sr.callback] = sub
-
-	go sh.distributeLast10Items(sub)
-}
-
-func (sh *subscribeHandler) distributeLast10Items(sub *subscriber) {
-	data := CONTENT_STORE.welcomeContent(sub.topic)
-	if len(data) == 0 {
-		log.Println("No old data to send")
-		return
-	}
-
-	log.Println(string(data))
-
-	req, err := buildRequest(data, string(sub.callback), string(sub.topic))
-	if err != nil {
-		log.Println("Couldn't build the welcome content")
-		return
-	}
-
-	c := http.Client{}
-	<-FREE_CONNS
-	go doDistribute(c, req, 0)
 }
 
 func (sh *subscribeHandler) distributeToSubscribers(topic Topic) {

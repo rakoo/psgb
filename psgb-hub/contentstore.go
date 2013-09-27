@@ -89,28 +89,6 @@ func (cs *contentStore) processAtom(rawContent []byte, topic Topic) {
 func (cs *contentStore) processRss(rawContent []byte, uri Topic) {
 }
 
-// Header of the topic content, plus the last 10 elements
-func (cs *contentStore) welcomeContent(topic Topic) (rawContent []byte) {
-	sortedDates := cs.contentSortedItems[topic]
-
-	b := bytes.NewBuffer(rawContent)
-	b.WriteString(cs.contentHeader[topic])
-
-	topicContent := cs.content[topic]
-	for i := len(sortedDates) - 10; i < len(sortedDates); i++ {
-		log.Printf("iterating with %d", i)
-		if i < 0 {
-			continue
-		}
-
-		content := topicContent[sortedDates[i]]
-		log.Printf("Content length: %d", len(content))
-		b.WriteString(content)
-	}
-
-	return b.Bytes()
-}
-
 func (cs *contentStore) contentAfterDate(topic Topic, t time.Time) (rawContent []byte) {
 	sortedDates := cs.contentSortedItems[topic]
 	searchFunc := func(i int) bool {
