@@ -9,14 +9,14 @@ import (
 )
 
 type publishHandler struct {
-	newContentToFetch chan Topic // topic URI to fetch
-	newContent        chan Topic // topic URI added in db
+	newContentToFetch chan string // topic URI to fetch
+	newContent        chan string // topic URI added in db
 }
 
 func newPublishHandler() *publishHandler {
 	ph := &publishHandler{
-		newContentToFetch: make(chan Topic),
-		newContent:        make(chan Topic),
+		newContentToFetch: make(chan string),
+		newContent:        make(chan string),
 	}
 
 	go ph.start()
@@ -71,13 +71,13 @@ func (p *publishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		log.Printf("Got new content notification for %s", parsedUrl.String())
-		p.newContentToFetch <- Topic(parsedUrl.String())
+		p.newContentToFetch <- parsedUrl.String()
 	}
 
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (p *publishHandler) fetchContent(topic Topic) {
+func (p *publishHandler) fetchContent(topic string) {
 	// TODO: User-Agent, If-None-Match, If-Modified-Since
 	resp, err := http.Get(string(topic))
 	FREE_CONNS <- true
@@ -88,19 +88,19 @@ func (p *publishHandler) fetchContent(topic Topic) {
 		return
 	}
 
-	t := resp.Header.Get("Content-Type")
-	if t == "" {
-		t = http.DetectContentType([]byte(resp.Header.Get("Content-Type")))
+	ct := resp.Header.Get("Content-Type")
+	if ct == "" {
+		ct = http.DetectContentType([]byte(resp.Header.Get("Content-Type")))
 	}
 
-	if t != "application/atom+xml" && t != "application/rss+xml" {
-		log.Println("Not parsing", t)
+	if ct != "application/atom+xml" && ct != "application/rss+xml" {
+		log.Println("Not parsing", ct)
 		return
 	}
 
 	var c bytes.Buffer
 	io.Copy(&c, resp.Body)
-	CONTENT_STORE.processNewContent(c.Bytes(), t, topic)
+	CONTENT_STORE.processNewContent(topic, ct, c.String())
 
 	log.Println("Got new content for", string(topic))
 	p.newContent <- topic

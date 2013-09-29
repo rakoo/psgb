@@ -9,29 +9,28 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 )
 
-type Callback string
-
 type subscribeRequest struct {
-	callback     Callback
+	callback     string
 	mode         string
-	topic        Topic
+	topic        string
 	leaseSeconds int
 }
 
 type subscriber struct {
-	callback     Callback
-	topic        Topic
-	lastNotified time.Time
+	callback     string
+	topic        string
+	lastNotified string
 	leaseSeconds int
 }
 
 // As specified by 0.4
 type subscribeHandler struct {
 	subscribeRequests chan *subscribeRequest
-	subscribers       map[Topic]map[Callback]*subscriber // topic -> subscriber's callback -> subscriber
+	subscribers       map[string]map[string]*subscriber // topic -> subscriber's callback -> subscriber
 	challengeSource   *randStringMaker
 }
 
@@ -39,7 +38,7 @@ func newSubscribeHandler() *subscribeHandler {
 
 	sh := &subscribeHandler{
 		subscribeRequests: make(chan *subscribeRequest),
-		subscribers:       make(map[Topic]map[Callback]*subscriber),
+		subscribers:       make(map[string]map[string]*subscriber),
 		challengeSource:   newRandStringMaker(),
 	}
 
@@ -60,7 +59,7 @@ func (sh *subscribeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	callback := Callback(r.FormValue("hub.callback"))
+	callback := r.FormValue("hub.callback")
 	if callback == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("Didn't find hub.callback"))
@@ -74,7 +73,7 @@ func (sh *subscribeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	topic := Topic(r.FormValue("hub.topic"))
+	topic := r.FormValue("hub.topic")
 	if topic == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("Didn't find hub.topic"))
@@ -118,10 +117,10 @@ func (sh *subscribeHandler) confirmSubscription(sr *subscribeRequest) {
 	challenge := sh.challengeSource.RandomString()
 
 	var requestURI bytes.Buffer
-	fmt.Fprint(&requestURI, string(sr.callback))
+	fmt.Fprint(&requestURI, sr.callback)
 	fmt.Fprint(&requestURI, "?")
 	fmt.Fprintf(&requestURI, "hub.mode=%s&", url.QueryEscape(sr.mode))
-	fmt.Fprintf(&requestURI, "hub.topic=%s&", url.QueryEscape(string(sr.topic)))
+	fmt.Fprintf(&requestURI, "hub.topic=%s&", url.QueryEscape(sr.topic))
 	fmt.Fprintf(&requestURI, "hub.challenge=%s&", url.QueryEscape(challenge))
 	fmt.Fprintf(&requestURI, "hub.lease_seconds=%d&", sr.leaseSeconds)
 
@@ -155,36 +154,47 @@ func (sh *subscribeHandler) confirmSubscription(sr *subscribeRequest) {
 	}
 
 	if _, ok := sh.subscribers[sr.topic]; !ok {
-		sh.subscribers[sr.topic] = make(map[Callback]*subscriber)
+		sh.subscribers[sr.topic] = make(map[string]*subscriber)
 	}
 
 	sub := &subscriber{
-		callback:     Callback(sr.callback),
-		topic:        Topic(sr.topic),
-		lastNotified: time.Now(),
+		callback:     sr.callback,
+		topic:        sr.topic,
+		lastNotified: "",
 		leaseSeconds: sr.leaseSeconds,
 	}
 	sh.subscribers[sr.topic][sr.callback] = sub
+
+  log.Println("Subscriber added to db")
 }
 
-func (sh *subscribeHandler) distributeToSubscribers(topic Topic) {
+func (sh *subscribeHandler) distributeToSubscribers(topic string) {
 	for _, sub := range sh.subscribers[topic] {
-		data := CONTENT_STORE.contentAfterDate(topic, sub.lastNotified)
-		req, err := buildRequest(data, string(sub.callback), string(topic))
+		data, lastId := CONTENT_STORE.contentAfter(topic, sub.lastNotified)
+    if sub.lastNotified != "" && sub.lastNotified >= lastId {
+      continue
+    }
+
+		req, err := buildRequest(data, sub.callback, topic)
 		if err != nil {
 			continue
 		}
 
 		c := http.Client{}
 		<-FREE_CONNS
-		go doDistribute(c, req, 0)
+		ok := make(chan bool)
+		go func() {
+			<-ok
+			sub.lastNotified = lastId
+		}()
+		go doDistribute(c, req, 0, ok)
 
 	}
 
 	// TODO: remove old elements (only keep last 10)
 }
 
-func doDistribute(c http.Client, req *http.Request, attempt int) {
+func doDistribute(c http.Client, req *http.Request, attempt int, ok chan bool) {
 
 	if attempt >= 5 {
 		log.Printf("Failed to deliver to %s after 5 attempts. All hope is lost.", req.URL.String())
@@ -204,12 +214,14 @@ func doDistribute(c http.Client, req *http.Request, attempt int) {
 		time.Sleep(time.Duration(int(math.Ceil(multiplier))) * time.Minute)
 
 		<-FREE_CONNS
-		go doDistribute(c, req, attempt+1)
+		go doDistribute(c, req, attempt+1, ok)
 	}
+
+	ok <- true
 }
 
-func buildRequest(data []byte, remoteUrl, feedUrl string) (req *http.Request, err error) {
-	req, err = http.NewRequest("POST", remoteUrl, bytes.NewReader(data))
+func buildRequest(data string, remoteUrl, feedUrl string) (req *http.Request, err error) {
+	req, err = http.NewRequest("POST", remoteUrl, strings.NewReader(data))
 	if err != nil {
 		log.Println("Couldn't create a POST request:", err.Error())
 		return
