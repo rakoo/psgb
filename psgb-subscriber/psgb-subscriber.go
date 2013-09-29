@@ -86,7 +86,7 @@ func SubscribeToFunc(w http.ResponseWriter, r *http.Request) {
 
 	// As specified in 0.4
 	subRequest := url.Values{}
-	subRequest.Set("hub.callback", "http://kpad.otokar.looc2011.eu:8081/subscribeCallback")
+	subRequest.Set("hub.callback", "http://localhost:8081/subscribeCallback")
 	subRequest.Set("hub.topic", feedUri.String())
 	subRequest.Set("hub.mode", "subscribe")
 	subRequest.Set("hub.lease_seconds", fmt.Sprintf("%d", DEFAULT_LEASE_SECONDS))
@@ -114,6 +114,8 @@ func SubscribeCallbackFunc(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleVerification(w http.ResponseWriter, r *http.Request) {
+  log.Println("Confirming verification")
+
 	err := r.ParseForm()
 	if err != nil {
 		log.Println("Error in parsing request: ", err.Error())
