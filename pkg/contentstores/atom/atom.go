@@ -9,6 +9,10 @@ import (
 	"strings"
 )
 
+const (
+  ITEMS_IN_MEMORY := 10
+)
+
 // A struct used to get all the internal content of a feed
 type entriesFeed struct {
 	Entries []*entry `xml:"entry"`
@@ -62,6 +66,12 @@ func (tc *topicContent) addEntries(entries []*entry) {
 			tc.entries = append(tc.entries, e)
 		}
 	}
+
+  // Keep only ITEMS_IN_MEMORY items
+  skip := len(tc.entries) - ITEMS_IN_MEMORY
+  if skip > 0 {
+    tc.entries = tc.entries[skip:]
+  }
 }
 
 type AtomStore struct {
