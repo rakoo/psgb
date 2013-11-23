@@ -10,7 +10,7 @@ import (
 )
 
 const (
-  ITEMS_IN_MEMORY = 10
+	ITEMS_IN_MEMORY = 10
 )
 
 // A struct used to get all the internal content of a feed
@@ -67,11 +67,11 @@ func (tc *topicContent) addEntries(entries []*entry) {
 		}
 	}
 
-  // Keep only ITEMS_IN_MEMORY items
-  skip := len(tc.entries) - ITEMS_IN_MEMORY
-  if skip > 0 {
-    tc.entries = tc.entries[skip:]
-  }
+	// Keep only ITEMS_IN_MEMORY items
+	skip := len(tc.entries) - ITEMS_IN_MEMORY
+	if skip > 0 {
+		tc.entries = tc.entries[skip:]
+	}
 }
 
 type AtomStore struct {

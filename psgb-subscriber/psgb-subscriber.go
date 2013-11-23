@@ -37,8 +37,8 @@ func isOnHold(uri string) bool {
 	subscriptionsOnHoldMutex.Lock()
 	defer subscriptionsOnHoldMutex.Unlock()
 
-  _, ok := onHold[uri]
-  return ok
+	_, ok := onHold[uri]
+	return ok
 }
 
 func SubscribeToFunc(w http.ResponseWriter, r *http.Request) {
@@ -111,7 +111,7 @@ func SubscribeCallbackFunc(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleVerification(w http.ResponseWriter, r *http.Request) {
-  log.Println("Confirming verification")
+	log.Println("Confirming verification")
 
 	err := r.ParseForm()
 	if err != nil {
@@ -208,8 +208,8 @@ func main() {
 	http.HandleFunc("/subscribeCallback", SubscribeCallbackFunc)
 
 	log.Println("Starting subscriber on port 8081")
-  log.Println("To subscribe, send a POST to /subscribeTo with following args: ")
-  log.Println("  feed_uri: the feed's uri")
-  log.Println("  hub_uri: the hub's uri")
+	log.Println("To subscribe, send a POST to /subscribeTo with following args: ")
+	log.Println("  feed_uri: the feed's uri")
+	log.Println("  hub_uri: the hub's uri")
 	log.Fatal(http.ListenAndServe(":8081", nil))
 }

@@ -165,15 +165,15 @@ func (sh *subscribeHandler) confirmSubscription(sr *subscribeRequest) {
 	}
 	sh.subscribers[sr.topic][sr.callback] = sub
 
-  log.Println("Subscriber added to db")
+	log.Println("Subscriber added to db")
 }
 
 func (sh *subscribeHandler) distributeToSubscribers(topic string) {
 	for _, sub := range sh.subscribers[topic] {
 		data, lastId := CONTENT_STORE.contentAfter(topic, sub.lastNotified)
-    if sub.lastNotified != "" && sub.lastNotified >= lastId {
-      continue
-    }
+		if sub.lastNotified != "" && sub.lastNotified >= lastId {
+			continue
+		}
 
 		req, err := buildRequest(data, sub.callback, topic)
 		if err != nil {

@@ -28,10 +28,10 @@ func newContentStore() (cs *contentStore) {
 
 func (cs *contentStore) processNewContent(topic, contentType, content string) {
 	if fs, ok := cs.formatStores[contentType]; ok {
-    _, err := fs.AddNewContent(topic, string(content))
-    if err != nil {
-      log.Fatal(err)
-    }
+		_, err := fs.AddNewContent(topic, string(content))
+		if err != nil {
+			log.Fatal(err)
+		}
 
 	} else {
 		log.Println("Couldn't parse ", contentType)
