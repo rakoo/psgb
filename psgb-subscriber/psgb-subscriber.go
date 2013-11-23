@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -197,6 +199,15 @@ func handleNewItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("New content for %s from %s", topic, hub)
+
+	var bodyBuf bytes.Buffer
+	_, err := io.Copy(&bodyBuf, r.Body)
+	if err != nil {
+		log.Println("Error when recopying body")
+		return
+	}
+
+	log.Println(string(bodyBuf.Bytes()))
 
 	w.WriteHeader(http.StatusAccepted)
 
