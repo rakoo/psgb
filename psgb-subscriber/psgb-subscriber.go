@@ -207,6 +207,9 @@ func main() {
 	http.HandleFunc("/subscribeTo", SubscribeToFunc)
 	http.HandleFunc("/subscribeCallback", SubscribeCallbackFunc)
 
-	log.Println("Starting subscriber on port 8081...")
+	log.Println("Starting subscriber on port 8081")
+  log.Println("To subscribe, send a POST to /subscribeTo with following args: ")
+  log.Println("  feed_uri: the feed's uri")
+  log.Println("  hub_uri: the hub's uri")
 	log.Fatal(http.ListenAndServe(":8081", nil))
 }

@@ -10,7 +10,7 @@ import (
 )
 
 const (
-  ITEMS_IN_MEMORY := 10
+  ITEMS_IN_MEMORY = 10
 )
 
 // A struct used to get all the internal content of a feed

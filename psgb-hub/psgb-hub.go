@@ -33,6 +33,6 @@ func main() {
 	http.Handle("/publish", publishHandler)
 	http.Handle("/subscribe", subscribeHandler)
 
-	log.Println("Starting server...")
+	log.Println("Starting server on port 8080")
 	log.Fatal(http.ListenAndServe("localhost:8080", nil))
 }
