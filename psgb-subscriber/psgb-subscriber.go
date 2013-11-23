@@ -21,27 +21,24 @@ var (
 
 func addSubscriptionOnHold(topic string) {
 	subscriptionsOnHoldMutex.Lock()
+	defer subscriptionsOnHoldMutex.Unlock()
+
 	onHold[topic] = true
-	subscriptionsOnHoldMutex.Unlock()
 }
 
 func removeSubscriptionOnHold(topic string) {
 	subscriptionsOnHoldMutex.Lock()
+	defer subscriptionsOnHoldMutex.Unlock()
+
 	delete(onHold, topic)
-	subscriptionsOnHoldMutex.Unlock()
 }
 
-func isOnHold(uri string) (valid bool) {
+func isOnHold(uri string) bool {
 	subscriptionsOnHoldMutex.Lock()
+	defer subscriptionsOnHoldMutex.Unlock()
 
-	if _, ok := onHold[uri]; ok {
-		valid = true
-	} else {
-		valid = false
-	}
-	subscriptionsOnHoldMutex.Unlock()
-
-	return
+  _, ok := onHold[uri]
+  return ok
 }
 
 func SubscribeToFunc(w http.ResponseWriter, r *http.Request) {
