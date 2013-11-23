@@ -152,8 +152,6 @@ func (as *AtomStore) AddNewContent(topic, content string) (lastid string, err er
 }
 
 // Returns content after a given id.
-// This id must be parseable into a time.Time, since this is what we
-// use.
 func (as *AtomStore) ContentAfter(topic, id string) (content, lastId string) {
 	tc := as.getTopicContent(topic)
 	if tc == nil {
